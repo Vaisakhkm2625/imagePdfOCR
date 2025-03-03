@@ -16,13 +16,17 @@
         </header>
         <main>
             <section class="container">
-
-                <div id="drop_zone">
-                    <div>
-                        <snap class="drop_zone_text">Drag'nDrop Your Images Here</snap>
+                <div id="controls">
+                    <div id="drop_zone">
+                        <div>
+                            <snap class="drop_zone_text">Drag'nDrop Your Images Here</snap>
+                        </div>
+                        <input type="file" id="imageInput" multiple accept="image/*" style="display:none;">
                     </div>
+
+                        
+                    <button id="convert" class="button"> Convert to PDF </button>
                 </div>
-                
             </section>
 
             <section  class="container">
@@ -44,6 +48,16 @@
         drop_zone.addEventListener("dragleave",(e)=> {
             e.preventDefault();
             drop_zone.classList.remove("dragover")
+        })
+
+
+        drop_zone.addEventListener("click",(e)=> {
+            imageInput.click();
+        })
+
+        imageInput.addEventListener("change", (e)=>{
+            handleFile(e.target.files);
+
         })
 
         drop_zone.addEventListener("drop",(e)=> {
@@ -72,25 +86,6 @@
             }
         }
 
-        //function handleFile (e) {
-        //    console.log(e);
-        //    for (const file in e.dataTransfer.files) {
-        //        console.log(file)
-
-        //        if(file.type.startWith("image/")) {
-        //            selectedFiles.push(file);
-
-        //            img.src = URL.createObjectURL(file);
-        //            img.classList.add("preview_img");
-        //            preview.appendChild(img);
-
-        //        }
-
-        //    }
-        //    
-
-        //}
-            
         </script>
 
     </body>
