@@ -15,17 +15,83 @@
             <h1 class="title">Img2Pdf</h1>
         </header>
         <main>
-            <section class=".container">
+            <section class="container">
 
-                <div class="file-input">
-                    <div class="file-inner-input">
-                        <snap class="file-input-text">Drag'nDrop Your Images Here</snap>
+                <div id="drop_zone">
+                    <div>
+                        <snap class="drop_zone_text">Drag'nDrop Your Images Here</snap>
                     </div>
                 </div>
                 
             </section>
 
+            <section  class="container">
+                <div id="preview">
+
+                </div>
+
+            </section>
         </main>
+
+        <script>
+
+
+        drop_zone.addEventListener("dragover",(e)=> {
+            e.preventDefault();
+            drop_zone.classList.add("dragover");
+        })
+
+        drop_zone.addEventListener("dragleave",(e)=> {
+            e.preventDefault();
+            drop_zone.classList.remove("dragover")
+        })
+
+        drop_zone.addEventListener("drop",(e)=> {
+            e.preventDefault();
+            drop_zone.classList.remove("dragover")
+
+            console.log(e.dataTransfer.files)
+            handleFile(e.dataTransfer.files);
+        })
+
+        selectedFiles = []
+
+
+        function handleFile(files) {
+            for (const file of files) {
+                console.log(file)
+
+                if (file.type.startsWith("image/")) {
+                    selectedFiles.push(file);
+
+                    const img = document.createElement("img");
+                    img.src = URL.createObjectURL(file);
+                    img.classList.add("preview-img");
+                    preview.appendChild(img);
+                }
+            }
+        }
+
+        //function handleFile (e) {
+        //    console.log(e);
+        //    for (const file in e.dataTransfer.files) {
+        //        console.log(file)
+
+        //        if(file.type.startWith("image/")) {
+        //            selectedFiles.push(file);
+
+        //            img.src = URL.createObjectURL(file);
+        //            img.classList.add("preview_img");
+        //            preview.appendChild(img);
+
+        //        }
+
+        //    }
+        //    
+
+        //}
+            
+        </script>
 
     </body>
 </html>
