@@ -196,6 +196,13 @@ img {
     grid-gap: var(--padding)
 }
 
+
+#preview_area canvas {
+    width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+}
+
 #convert {
    width: 100%;
    /*justify-self: stretch;*/
@@ -236,3 +243,19 @@ img {
 }
 
 
+.box {
+    position: absolute;
+    border: 2px solid rgba(255, 0, 0, 0);
+    pointer-events: none;
+    animation: fadeInBox 1s forwards;
+}
+
+.preview-container {
+    position: relative;
+    display: inline-block;
+    margin: 10px;
+    border: 1px solid #ddd;
+}
+.preview-container img {
+    display: block;
+}

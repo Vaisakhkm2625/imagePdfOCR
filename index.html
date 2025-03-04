@@ -30,8 +30,9 @@
                         it will combine images provides OCR enabled (selectedable text) pdf file </span>
 
 
-                        <button id="convert" class="button"> Convert to PDF </button>
-                        <span> status: <span id="statusDiv"> <span/>  </span>
+                        <button id="convertButton" class="button"> Convert to PDF </button>
+                        <!-- <span> status: <span id="progressDiv"> File not uploaded <span/>  </span> -->
+                        <span id="progressDiv">  <span/>  
 
                     </div>
                 </div>
@@ -98,49 +99,62 @@
         //     }
         // }
 
+
+    const uploadedItems = [];
+
     async function handleFile(files) {
       // const files = e.target.files;
       if (!files.length) return;
-      statusDiv.innerHTML = 'Processing files...';
-      const pdf = new jsPDF();
-      let firstPage = true;
-      const pxToMm = 0.2646; // conversion factor
-
       for (let file of files) {
         if (!file.type.startsWith('image/')) continue;
-        console.log(file)
-
-
-        statusDiv.innerHTML = 'Processing files...';
-            console.log(statusDiv)
         const dataURL = await readFileAsDataURL(file);
         const img = await loadImage(dataURL);
 
+        //  preview canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        // Store original image reference for re-drawing
+        canvas.image = img;
+        preview_area.appendChild(canvas);
+        // Save image info for conversion
+        uploadedItems.push({ file, dataURL, image: img, canvas });
+        // Enable conversion button if there is at least one image
+        convertButton.disabled = uploadedItems.length === 0;
+      }
+    }
 
+    // Start conversion when button is clicked
+    convertButton.addEventListener('click', async () => {
+      progressDiv.innerHTML = 'Processing files...';
+      const pdf = new jsPDF();
+      let firstPage = true;
+      const pxToMm = 0.2646; // pixel to mm conversion
 
-        // Create preview container
-        const preview = document.createElement('div');
-        preview.className = 'preview-container';
-        preview.style.width = img.width + 'px';
-        preview.style.height = img.height + 'px';
-
-        const previewImg = document.createElement('img');
-        previewImg.src = dataURL;
-        preview.appendChild(previewImg);
-        preview_area.appendChild(preview);
-
-        // Perform OCR and get detailed data including bounding boxes
-        const result = await Tesseract.recognize(img, 'eng', {
+      for (let item of uploadedItems) {
+        // Run OCR on the image
+        const result = await Tesseract.recognize(item.image, 'eng', {
                 logger: (m) => {
-                    console.log(m) ;
-                    console.log(m.progress * 100) ;
-                    statusDiv.innerHTML =  m.progress * 100; 
+                    console.log(m);
+                    progressDiv.innerHTML = `Processing files...(${m.status}..${m.progress})`;
                 }
+
         });
 
-        // For PDF generation
-        let imgWidth = img.width * pxToMm;
-        let imgHeight = img.height * pxToMm;
+        // Animate drawing boxes on preview canvas
+        const boxes = result.data.words.map(word => ({
+          x0: word.bbox.x0,
+          y0: word.bbox.y0,
+          x1: word.bbox.x1,
+          y1: word.bbox.y1
+        }));
+        animateBoxes(item.canvas, boxes);
+
+        // Prepare PDF page with image dimensions
+        const imgWidth = item.image.width * pxToMm;
+        const imgHeight = item.image.height * pxToMm;
         if (!firstPage) {
           pdf.addPage();
         } else {
@@ -148,21 +162,11 @@
         }
         pdf.internal.pageSize.setWidth(imgWidth);
         pdf.internal.pageSize.setHeight(imgHeight);
-        pdf.addImage(dataURL, 'JPEG', 0, 0, imgWidth, imgHeight);
+        pdf.addImage(item.dataURL, 'JPEG', 0, 0, imgWidth, imgHeight);
 
-        // Overlay OCR text using word bounding boxes for better alignment.
+        // Overlay invisible OCR text using bounding boxes
         result.data.words.forEach(word => {
-          // Create animated box for preview
           const { x0, y0, x1, y1 } = word.bbox;
-          const box = document.createElement('div');
-          box.className = 'box';
-          box.style.left = x0 + 'px';
-          box.style.top = y0 + 'px';
-          box.style.width = (x1 - x0) + 'px';
-          box.style.height = (y1 - y0) + 'px';
-          preview.appendChild(box);
-
-          // Add OCR text to PDF using bounding box
           const x_mm = x0 * pxToMm;
           const y_mm = y0 * pxToMm;
           const boxHeight_mm = (y1 - y0) * pxToMm;
@@ -180,13 +184,33 @@
           } catch(e) {}
         });
       }
-      statusDiv.innerHTML = 'Processing complete. Downloading PDF...';
+      progressDiv.innerHTML = 'Processing complete. Downloading PDF...';
       pdf.save('ocr_enabled.pdf');
-      statusDiv.innerHTML = 'Download initiated.';
+      progressDiv.innerHTML = 'Download initiated.';
+    });
+
+    // Animate drawing boxes directly onto the canvas (fade-in effect)
+    function animateBoxes(canvas, boxes) {
+      const ctx = canvas.getContext('2d');
+      const duration = 1000; // 1 second fade-in
+      let startTime;
+      function drawFrame(timestamp) {
+        if (!startTime) startTime = timestamp;
+        let progress = (timestamp - startTime) / duration;
+        if (progress > 1) progress = 1;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(canvas.image, 0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "rgba(255, 0, 0, " + progress + ")";
+        ctx.lineWidth = 2;
+        boxes.forEach(box => {
+          ctx.strokeRect(box.x0, box.y0, box.x1 - box.x0, box.y1 - box.y0);
+        });
+        if (progress < 1) {
+          requestAnimationFrame(drawFrame);
+        }
+      }
+      requestAnimationFrame(drawFrame);
     }
-
-
-
 
     function readFileAsDataURL(file) {
       return new Promise((resolve, reject) => {
@@ -205,20 +229,6 @@
         img.src = dataURL;
       });
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         </script>
 
     </body>
